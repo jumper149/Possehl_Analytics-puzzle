@@ -93,6 +93,7 @@ terminalStream chanLight chanTerminal = flip catchAll (const $ pure []) $ do -- 
     threadDelay 10 -- TODO: This is not necessary unless the river flows with lightspeed, maybe it could be improved still.
                    --       One should also think about whether consuming a few additional terminals actually hurts.
                    --       Really depends on the use case.
+                   --       EDIT: After reading the puzzle again, it is clear that this can be completely removed.
     killThread trafficLightThread
     (nextTerminal :) <$> terminalStream chanLight chanTerminal
 
