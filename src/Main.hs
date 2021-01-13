@@ -23,36 +23,47 @@ singletonCountMap x = CountMap $ M.singleton x 1
 countTerminals :: (Terminal a, Foldable f, Functor f) => f a -> CountMap a
 countTerminals = foldMap singletonCountMap
 
--- | Check if there are as many `Terminal`s in `f` as given in the `CountMap`.
--- Returns either a Unit (OK) or a `CountMap` of the still missing `Terminal`s.
-testCountMap :: (Terminal a, Foldable f)
-             => CountMap a -- ^ CountMap to check
-             -> f a        -- ^ provided terminals
-             -> Either (CountMap a) ()
-testCountMap countMap ts = isOk $ foldr useUp countMap ts
-    where useUp a (CountMap m) = case M.lookup a m of
-                                   Nothing -> CountMap m
-                                   Just 1 -> CountMap $ M.delete a m
-                                   Just i -> CountMap $ M.insert a (pred i) m
-          isOk m
-            | m == mempty = Right ()
-            | otherwise = Left m
-
--- | Wraps `testCountMap` and `countTerminals` for the given problem.
-testMessage :: (Terminal a, Foldable f, Functor f, Foldable g)
-            => f a -- ^ message
-            -> g a -- ^ river
-            -> Either (CountMap a) ()
-testMessage mes = testCountMap (countTerminals mes)
+-- | Remove a single matching `Terminal` from a `CountMap` or return the given `CountMap` when it
+-- doesn't match.
+-- Returns `Nothing` when the `CountMap` is completely used up.
+consume :: Terminal a => a -> CountMap a -> Maybe (CountMap a)
+consume a (CountMap m) = justOrEmpty $
+    case M.lookup a m of
+      Nothing -> CountMap m
+      Just 1 -> CountMap $ M.delete a m
+      Just i -> CountMap $ M.insert a (pred i) m
+    where justOrEmpty countMap
+            | countMap == mempty = Nothing
+            | otherwise = Just countMap
 
 ----------------------------------------------------------------------------------------------------
+
+-- | Check if there are as many `Terminal`s in `[a]` as given in the `CountMap`.
+-- Returns either a Unit (OK) or a `CountMap` of the still missing `Terminal`s.
+testCountMapM :: (Terminal a, Monad m)
+              => CountMap a -- ^ CountMap to check
+              -> [a]        -- ^ provided terminals
+              -> m (Either (CountMap a) ())
+testCountMapM countMap [] = pure $ Left countMap
+testCountMapM countMap (t:ts) = do
+    let mbCountMap' = consume t countMap
+    case mbCountMap' of
+      Nothing -> pure $ Right ()
+      Just countMap' -> testCountMapM countMap' ts
+
+-- | Wraps `testCountMapM` and `countTerminals` for the given problem.
+testMessageM :: (Terminal a, Foldable f, Functor f, Monad m)
+             => f a -- ^ message
+             -> [a] -- ^ river
+             -> m (Either (CountMap a) ())
+testMessageM mes = testCountMapM (countTerminals mes)
 
 -- | For debugging.
 testMessageAtRiver' :: (Terminal a, Foldable f, Functor f, Monad m)
                     => f a   -- ^ message
                     -> m [a] -- ^ stream of terminals
                     -> m (Either (CountMap a) ())
-testMessageAtRiver' mes str = testMessage mes <$> str
+testMessageAtRiver' mes str = testMessageM mes =<< str
 
 ----------------------------------------------------------------------------------------------------
 
