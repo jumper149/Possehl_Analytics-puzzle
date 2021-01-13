@@ -1,7 +1,7 @@
-{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds #-}
 
-import Control.Monad.Catch (catchAll)
 import Control.Concurrent
+import Control.Monad.Catch (catchAll)
 import Data.Foldable (traverse_)
 import qualified Data.Map as M
 
