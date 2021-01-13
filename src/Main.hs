@@ -1,8 +1,8 @@
 {-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
 
-import Control.Monad.Catch
+import Control.Monad.Catch (catchAll)
 import Control.Concurrent
-import Data.Foldable
+import Data.Foldable (traverse_)
 import qualified Data.Map as M
 
 type Terminal a = Ord a
