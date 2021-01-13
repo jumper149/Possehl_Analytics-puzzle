@@ -1,0 +1,32 @@
+Es gibt einen schnell fließenden Fluss, in welchem
+kleine Körbchen schwimmen, die nacheinander an
+einem Beobachter vorbeiziehen. In jedem Körbchen
+findet sich ein Zettel, auf dem ein zufälliges Zeichen
+eines Alphabets aufgemalt ist. Es könnte sein, dass
+sich Zeichen in verschiedenen Körbchen wiederholen.
+Du hast eine bestimmte Nachricht im Kopf und würdest
+sie gerne auf Papier bringen. Die Idee ist einfach: du
+hast ein sehr großes aber leeres Blatt und Kleber –
+du nimmst dir nun einfach die richtigen Zeichen aus den
+vorbeischwimmenden Körbchen raus und klebst sie auf
+das Blatt, und lässt so deine Nachricht entstehen.
+
+An dem Fluss ist eine Ampel, die rot aufleuchtet,
+wenn keine weiteren Körbchen mehr kommen werden.
+
+Die Aufgabe ist nun ein effizientes Computerprogramm
+zu schreiben, welches prüft, ob es eine beliebige (aber
+endlich lange) Nachricht aus den Zeichen verfasst werden
+kann, welche in den Körbchen im Fluss vorbei schwimmen.
+
+Dabei gibt es zu bedenken, dass der Fluss an Zeichen
+jederzeit stoppen kann („rote Ampel”). Man kann einen
+Zettel an sich vorbeischwimmen lassen oder ihn nehmen,
+sofern er für die Nachricht verwendet werden kann.
+
+
+
+Für die Lösung des Puzzles gibt keine zeitliche Begrenzung
+und du kannst es in einer beliebigen Programmiersprache lösen.
+Offensichtlich würden wir würden uns besonders über eine Lösung
+in Haskell freuen.
