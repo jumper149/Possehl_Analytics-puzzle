@@ -4,7 +4,8 @@ import qualified Data.Map as M
 import Control.Monad.Identity
 import Control.Monad.IO.Class
 
-type Terminal a = (Eq a, Ord a)
+type Terminal a = Ord a
+type Message n = (Foldable n, Functor n)
 
 -- | Quantities of elements of type `a`.
 newtype CountMap a = CountMap { unCountMap :: M.Map a Integer }
@@ -20,7 +21,7 @@ singletonCountMap :: a -> CountMap a
 singletonCountMap x = CountMap $ M.singleton x 1
 
 -- | Create a `CountMap` for a message of `Terminal`s `a`.
-countTerminals :: (Terminal a, Foldable f, Functor f) => f a -> CountMap a
+countTerminals :: (Terminal a, Message n) => n a -> CountMap a
 countTerminals = foldMap singletonCountMap
 
 -- | Remove a single matching `Terminal` from a `CountMap` or return the given `CountMap` when it
@@ -52,15 +53,15 @@ testCountMapM countMap (t:ts) = do
       Just countMap' -> testCountMapM countMap' ts
 
 -- | Wraps `testCountMapM` and `countTerminals` for the given problem.
-testMessageM :: (Terminal a, Foldable f, Functor f, Monad m)
-             => f a -- ^ message
+testMessageM :: (Terminal a, Message n, Monad m)
+             => n a -- ^ message
              -> [a] -- ^ river
              -> m (Either (CountMap a) ())
 testMessageM mes = testCountMapM (countTerminals mes)
 
 -- | For debugging.
-testMessageAtRiver' :: (Terminal a, Foldable f, Functor f, Monad m)
-                    => f a   -- ^ message
+testMessageAtRiver' :: (Terminal a, Message n, Monad m)
+                    => n a   -- ^ message
                     -> m [a] -- ^ stream of terminals
                     -> m (Either (CountMap a) ())
 testMessageAtRiver' mes str = testMessageM mes =<< str
