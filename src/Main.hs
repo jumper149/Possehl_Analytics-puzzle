@@ -41,6 +41,9 @@ consume a (CountMap m) = justOrEmpty $
 
 -- | Check if there are as many `Terminal`s in `[a]` as given in the `CountMap`.
 -- Returns either a Unit (OK) or a `CountMap` of the still missing `Terminal`s.
+--
+-- Worst case: O(length provided terminals)
+-- Best case: O(length message * log(size countmap))
 testCountMapM :: (Terminal a, Monad m)
               => CountMap a -- ^ CountMap to check
               -> [a]        -- ^ provided terminals
