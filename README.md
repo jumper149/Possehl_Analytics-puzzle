@@ -7,6 +7,9 @@ Und da der Overhead für concurrent threads in Haskell nicht sehr groß ist, ist
 
 Ich lasse das jetzt jedenfalls so, nur um damit anzugeben, dass ich auch concurrency kann. :D
 
+Nebenbei war aus der Puzzle-Beschreibung nicht ganz klar ob meine Nachricht beliebig oder fest ist.
+Ich habe mich jedenfalls für 'fest' entschieden, da man ansonsten immer eine leere Nachricht schreiben könnte.
+
 -----------------------------------------------------------------
 
 Die debug-tests sehen so aus wie erwartet:
