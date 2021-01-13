@@ -1,8 +1,9 @@
-{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
 
+import Control.Monad.Catch
+import Control.Concurrent
+import Data.Foldable
 import qualified Data.Map as M
-import Control.Monad.Identity
-import Control.Monad.IO.Class
 
 type Terminal a = Ord a
 type Message n = (Foldable n, Functor n)
@@ -62,58 +63,83 @@ testMessageM :: (Terminal a, Message n, Monad m)
              -> m (Either (CountMap a) ())
 testMessageM mes = testCountMapM (countTerminals mes)
 
--- | For debugging.
-testMessageAtRiver' :: (Terminal a, Message n, Monad m)
-                    => n a   -- ^ message
-                    -> m [a] -- ^ stream of terminals
-                    -> m (Either (CountMap a) ())
-testMessageAtRiver' mes str = testMessageM mes =<< str
-
 ----------------------------------------------------------------------------------------------------
 
 data TrafficLight = Green
                   | Red
                   deriving (Bounded, Enum, Eq, Ord, Read, Show)
 
--- | What does the traffic light show?
--- The monad here would probably have `MonadIO`.
-getTrafficLightState :: Monad m => m TrafficLight
-getTrafficLightState = undefined
+-- | This function only returns when the `TrafficLight` turns `Red`.
+trafficLightBecameRed :: Chan TrafficLight
+                      -> ThreadId -- ^ thread to kill, when light turns red
+                      -> IO ()
+trafficLightBecameRed chan threadToBeKilled = do
+    light <- readChan chan
+    case light of
+      Green -> trafficLightBecameRed chan threadToBeKilled
+      Red -> killThread threadToBeKilled
 
--- | Uses `getTrafficLightState` to get the traffic light state until it is `Red` and returns the
+-- | Uses `trafficLightBecameRed` to get the traffic light state until it is `Red` and returns the
 -- lazy list of `Terminal`s up to that point.
--- The monad here would probably have `MonadIO`.
-terminalStream :: (Terminal a, Monad m) => m [a]
-terminalStream = undefined
+terminalStream :: Chan TrafficLight
+               -> Chan a
+               -> IO [a]
+terminalStream chanLight chanTerminal = flip catchAll (const $ pure []) $ do -- TODO: don't use catchAll
+    thisThread <- myThreadId
+    trafficLightThread <- forkIO $ trafficLightBecameRed chanLight thisThread
+    nextTerminal <- readChan chanTerminal
+    threadDelay 10 -- TODO: this is not necessary unless the river flows with lightspeed, maybe it could be improved still
+    killThread trafficLightThread
+    (nextTerminal :) <$> terminalStream chanLight chanTerminal
 
-testMessageAtRiver :: (Terminal a, Foldable f, Functor f, Monad m)
-                   => f a   -- ^ message
-                   -> m (Either (CountMap a) ())
-testMessageAtRiver = flip testMessageAtRiver' terminalStream
-
-----------------------------------------------------------------------------------------------------
-
-myMessage :: [Char]
-myMessage = "Stell mich ein!"
-
--- | Why am I wrapping this in `IdentityT`?
--- This is just a placeholder, but in a real world scenario, there would be `IO` involved to read the
--- `Terminal`s from the river. The `TrafficLight` would also be wrapped in `IO`.
--- So why not just use `IO [Char]` then?
--- This allows the programmer that fills in the functions above (`getTrafficLightState` and
--- `terminalStream`) to use some monad like:
---   `ReaderT (TVar TrafficLight) IO`
-someRiverStream, someRiverStream' :: Monad m => IdentityT m [Char]
-someRiverStream = pure "Sfsdlkj@hlLtak!lsfie ndle lasdasdllasdasda m asdai ac lkhsldf "
-someRiverStream' = pure "Sfsdlkj@hlLtaklsfie ndle lasdasdllasdasda m asdai ac lkhsldf "
+testMessageAtRiver :: (Terminal a, Message n)
+                   => Chan TrafficLight
+                   -> Chan a
+                   -> n a -- ^ message
+                   -> IO (Either (CountMap a) ())
+testMessageAtRiver chanLight chanTerminal message = do
+    terminals <- terminalStream chanLight chanTerminal
+    testMessageM message terminals
 
 ----------------------------------------------------------------------------------------------------
+
+myMessage :: String
+myMessage = "Stell mich??? ein!"
+
+someRiverStream, someRiverStream' :: [Char]
+someRiverStream = "Sfsdlkj@hl?Ltak!lsfie ndle las?dasdllasdasda m asdai ac lkhsldf ?"
+someRiverStream' = "Sfsdlkj@hlLtaklsfie ndle lasdasdllasdasda m asdai ac lkhsldf "
+
+tryProgram :: (Terminal a, Message n)
+           => n a -- ^ message
+           -> [a] -- ^ river
+           -> IO (Either (CountMap a) ())
+tryProgram message river = do
+    chanLight <- newChan
+    writeChan chanLight Green -- TODO: this is debugging
+
+    chanRiver <- newChan
+    writeList2Chan chanRiver river
+
+    testMessageAtRiver chanLight chanRiver message
+
+tryProgramException :: IO (Either (CountMap Char) ())
+tryProgramException = do
+    chanLight <- newChan
+    writeChan chanLight Green -- TODO: this is debugging
+
+    chanRiver <- newChan
+    _ <- forkIO $ do
+        let f t = threadDelay 100 >> writeChan chanRiver t
+        threadDelay 100
+        traverse_ f "???!!!"
+        writeChan chanLight Red
+        traverse_ f "Stell mich"
+
+    testMessageAtRiver chanLight chanRiver myMessage
 
 main :: IO ()
-main = runIdentityT $ do
-
-    messageOK <- testMessageAtRiver' myMessage someRiverStream
-    liftIO $ print messageOK
-
-    messageFail <- testMessageAtRiver' myMessage someRiverStream'
-    liftIO $ print messageFail
+main = do
+    print =<< tryProgram myMessage someRiverStream
+    print =<< tryProgram myMessage someRiverStream'
+    print =<< tryProgramException
