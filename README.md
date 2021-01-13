@@ -7,7 +7,7 @@ Und da der Overhead für concurrent threads in Haskell nicht sehr groß ist, ist
 
 Ich lasse das jetzt jedenfalls so, nur um damit anzugeben, dass ich auch concurrency kann. :D
 
---
+-----------------------------------------------------------------
 
 Die debug-tests sehen so aus wie erwartet:
 ```haskell
