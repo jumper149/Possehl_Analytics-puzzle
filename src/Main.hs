@@ -39,6 +39,7 @@ consume a (CountMap m) = justOrEmpty $
             | otherwise = Just countMap
 
 ----------------------------------------------------------------------------------------------------
+    -- parsing the message
 
 -- | Check if there are as many `Terminal`s in `[a]` as given in the `CountMap`.
 -- Returns either a Unit (OK) or a `CountMap` of the still missing `Terminal`s.
@@ -64,6 +65,7 @@ testMessageM :: (Terminal a, Message n, Monad m)
 testMessageM mes = testCountMapM (countTerminals mes)
 
 ----------------------------------------------------------------------------------------------------
+    -- handling the traffic light
 
 data TrafficLight = Green
                   | Red
@@ -88,10 +90,14 @@ terminalStream chanLight chanTerminal = flip catchAll (const $ pure []) $ do -- 
     thisThread <- myThreadId
     trafficLightThread <- forkIO $ trafficLightBecameRed chanLight thisThread
     nextTerminal <- readChan chanTerminal
-    threadDelay 10 -- TODO: this is not necessary unless the river flows with lightspeed, maybe it could be improved still
+    threadDelay 10 -- TODO: This is not necessary unless the river flows with lightspeed, maybe it could be improved still.
+                   --       One should also think about whether consuming a few additional terminals actually hurts.
+                   --       Really depends on the use case.
     killThread trafficLightThread
     (nextTerminal :) <$> terminalStream chanLight chanTerminal
 
+-- | The whole program.
+-- For a description read the puzzle.
 testMessageAtRiver :: (Terminal a, Message n)
                    => Chan TrafficLight
                    -> Chan a
@@ -102,6 +108,7 @@ testMessageAtRiver chanLight chanTerminal message = do
     testMessageM message terminals
 
 ----------------------------------------------------------------------------------------------------
+    -- debugging
 
 myMessage :: String
 myMessage = "Stell mich??? ein!"
@@ -116,7 +123,7 @@ tryProgram :: (Terminal a, Message n)
            -> IO (Either (CountMap a) ())
 tryProgram message river = do
     chanLight <- newChan
-    writeChan chanLight Green -- TODO: this is debugging
+    writeChan chanLight Green
 
     chanRiver <- newChan
     writeList2Chan chanRiver river
@@ -126,7 +133,7 @@ tryProgram message river = do
 tryProgramException :: IO (Either (CountMap Char) ())
 tryProgramException = do
     chanLight <- newChan
-    writeChan chanLight Green -- TODO: this is debugging
+    writeChan chanLight Green
 
     chanRiver <- newChan
     _ <- forkIO $ do
